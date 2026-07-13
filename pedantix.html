@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pédantox</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --primary: #3498db;
+            --hint-color: #e67e22;
+            --black-out: #1a1a1a;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .input-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            padding: 12px 24px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button.btn-hint {
+            background-color: var(--hint-color);
+        }
+
+        button.btn-hint:hover {
+            background-color: #d35400;
+        }
+
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .document-zone {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 18px;
+            line-height: 1.8;
+            word-spacing: 4px;
+            background: #fafafa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            margin-bottom: 30px;
+        }
+
+        /* Style spécifique pour le titre */
+        .title-zone {
+            font-size: 28px;
+            font-weight: bold;
+            border-bottom: 3px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .word {
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .word.hidden {
+            background-color: var(--black-out);
+            color: var(--black-out);
+            border-radius: 3px;
+            user-select: none;
+        }
+
+        .word.revealed {
+            background-color: transparent;
+            color: var(--text-color);
+        }
+        
+        .title-zone .word.revealed {
+            color: #2c3e50;
+        }
+
+        .stats {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .history-table th, .history-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .history-table th {
+            background-color: #f8f9fa;
+            color: #7f8c8d;
+        }
+        
+        .victory-message {
+            display: none;
+            background-color: #2ecc71;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1> Pédantox Technodoo</h1>
+        <p>Trouvez le <strong>TITRE</strong> pour gagner !</p>
+    </header>
+
+    <div class="container">
+        <div id="victoryMessage" class="victory-message">
+            VICTOIRE ! Vous avez trouvé la solution !
+        </div>
+
+        <div class="input-section">
+            <form id="gameForm" style="display: flex; flex: 1; gap: 10px;" onsubmit="verifierMot(event)">
+                <input type="text" id="wordInput" placeholder="Proposez un mot du texte ou du titre..." autocomplete="off" autofocus>
+                <button type="submit" id="btnSubmit">Tester</button>
+            </form>
+            <button class="btn-hint" id="btnHint" onclick="donnerIndices()">💡 Indice</button>
+        </div>
+
+        <div class="stats">
+            Mots du texte découverts : <span id="motsTrouves">0</span> | Tentatives : <span id="nbTentatives">0</span>
+        </div>
+
+        <div class="document-zone">
+            <div id="titleZone" class="title-zone"></div>
+            <div id="bodyZone"></div>
+        </div>
+
+        <h3>Historique des essais</h3>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>N°</th>
+                    <th>Mot proposé</th>
+                    <th>Occurrences totales</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // =========================================================================
+        // ⚙️ CONFIGURATION DU JEU
+        // =========================================================================
+        
+        0// Le titre exact à deviner pour déclencher les feux d'artifice
+        const titreSolution = "Dépistage par jack";
+
+        // Le texte qui sert d'indice contextuel
+        const texteSecret = "Le dépistage par jack représente une innovation majeure de la médecine en distanciel. Ce protocole moderne nécessite l'utilisation d'un câble double jack standard. L'utilisateur doit brancher une extrémité dans le port audio de son ordinateur et insérer délicatement l'autre extrémité dans son anus. Une infirmière connectée à distance envoie alors de légères décharges électriques à travers le câble. L'analyse des variations de résistance corporelle permet de détecter instantanément les MST.";
+
+        // Liste de secours pour le bouton indice
+        const listeIndicesPossibles = ["innovation", "cable", "ordinateur", "infirmiere", "distance", "electriques"];
+
+        // Ton dictionnaire de variantes/synonymes (majuscules/accents gérés automatiquement)
+        const variantesMots = {
+            "etre": ["est", "etait", "sont", "sommes", "etes", "suis", "ete"],
+            "avoir": ["a", "ont", "avait", "avais", "avons", "avez"],
+            "representer": ["represente", "representent"],
+            "necessiter": ["necessite", "necessitent"],
+            "devoir": ["doit", "doivent"],
+            "brancher": ["brancher", "branche", "branches"],
+            "inserer": ["inserer", "insere", "inseres"],
+            "envoyer": ["envoie", "envoient"],
+            "permettre": ["permet", "permettent"],
+            "detecter": ["detecter", "detecte", "detectent"],
+            "depister": ["depiste", "depistent", "depistage"],
+            "jack": ["jack", "jacks"],
+            "innovation": ["innovation", "innovations"],
+            "majeur": ["majeur", "majeure", "majeurs"],
+            "medecine": ["medecine", "medical"],
+            "distanciel": ["distanciel"],
+            "protocole": ["protocole", "protocoles"],
+            "moderne": ["moderne", "modernes"],
+            "utilisation": ["utilisation"],
+            "cable": ["cable", "cables"],
+            "double": ["double", "doubles"],
+            "standard": ["standard", "standards"],
+            "utilisateur": ["utilisateur", "utilisateurs"],
+            "extremite": ["extremite", "extremites"],
+            "port": ["port", "ports"],
+            "audio": ["audio"],
+            "ordinateur": ["ordinateur", "ordinateurs", "pc"],
+            "autre": ["autre", "autres"],
+            "anus": ["anus", "cul", "fondement"], 
+            "infirmiere": ["infirmiere", "infirmieres", "infirmier"],
+            "connecter": ["connecte", "connectee", "connectes"],
+            "distance": ["distance"],
+            "leger": ["leger", "legere", "legeres"],
+            "decharge": ["decharge", "decharges"],
+            "electrique": ["electrique", "electriques"],
+            "analyse": ["analyse", "analyses"],
+            "variation": ["variation", "variations"],
+            "resistance": ["resistance"],
+            "corporel": ["corporel", "corporelle"],
+            "mst": ["mst", "ist"]
+        };
+
+        // =========================================================================
+        // LOGIQUE INTERNE
+        // =========================================================================
+        let motsTrouvesSet = new Set();
+        let historiqueEssais = [];
+        let motsDuTitre = [];
+        let motsDuTexte = [];
+        let jeuGagne = false;
+
+        function normaliserMot(mot) {
+            return mot.toLowerCase()
+                      .normalize("NFD")
+                      .replace(/[\u0300-\u036f]/g, "") 
+                      .replace(/[^a-zA-Z0-9]/g, "");   
+        }
+
+        // On extrait les mots clés uniques nécessaires pour valider le TITRE complet
+        const motsClesDuTitreSolution = titreSolution.split(/\s+/).map(normaliserMot).filter(m => m.length > 0);
+
+        function initialiserJeu() {
+            // 1. Découper le Titre
+            motsDuTitre = titreSolution.split(/(\s+)/).map(analyserMorceau);
+            // 2. Découper le Corps du texte
+            motsDuTexte = texteSecret.split(/(\s+)/).map(analyserMorceau);
+
+            rendreLeTexte();
+        }
+
+        function analyserMorceau(morceau) {
+            if (morceau.trim() === '') return { type: 'space', texte: morceau };
+            const motNettoye = normaliserMot(morceau);
+            if (motNettoye.length > 0) {
+                return { type: 'word', texteOriginal: morceau, motNettoye: motNettoye };
+            } else {
+                return { type: 'punctuation', texte: morceau };
+            }
+        }
+
+        function genererHtmlMots(tableauMots, elementCible) {
+            elementCible.innerHTML = '';
+            tableauMots.forEach(item => {
+                if (item.type === 'space' || item.type === 'punctuation') {
+                    elementCible.appendChild(document.createTextNode(item.texte));
+                } else if (item.type === 'word') {
+                    const span = document.createElement('span');
+                    span.classList.add('word');
+                    
+                    if (motsTrouvesSet.has(item.motNettoye) || jeuGagne) {
+                        span.textContent = item.texteOriginal;
+                        span.classList.add('revealed');
+                    } else {
+                        span.textContent = item.texteOriginal.replace(/[a-zA-Z0-9À-ÿ]/g, '█');
+                        span.classList.add('hidden');
+                    }
+                    elementCible.appendChild(span);
+                }
+            });
+        }
+
+        function rendreLeTexte() {
+            genererHtmlMots(motsDuTitre, document.getElementById('titleZone'));
+            genererHtmlMots(motsDuTexte, document.getElementById('bodyZone'));
+        }
+
+        function verifierMot(event) {
+            if(event) event.preventDefault();
+            if(jeuGagne) return;
+
+            const input = document.getElementById('wordInput');
+            const motSaisi = input.value.trim();
+            if (!motSaisi) return;
+
+            const motNormalise = normaliserMot(motSaisi);
+            input.value = ''; 
+
+            if (historiqueEssais.some(e => e.mot === motNormalise)) {
+                alert("Vous avez déjà testé ce mot !");
+                return;
+            }
+
+            // Récupérer les variantes si elles existent
+            let listeMotsAValider = [motNormalise];
+            if (variantesMots[motNormalise]) {
+                listeMotsAValider = listeMotsAValider.concat(variantesMots[motNormalise].map(normaliserMot));
+            }
+
+            // Compter la présence dans le titre + texte
+            let occurrencesTotales = 0;
+            listeMotsAValider.forEach(motDeLaListe => {
+                // Check dans le titre
+                motsDuTitre.forEach(item => {
+                    if (item.type === 'word' && item.motNettoye === motDeLaListe) occurrencesTotales++;
+                });
+                // Check dans le texte
+                motsDuTexte.forEach(item => {
+                    if (item.type === 'word' && item.motNettoye === motDeLaListe) {
+                        occurrencesTotales++;
+                    }
+                });
+                
+                // Si présent, on l'ajoute aux mots trouvés
+                if (occurrencesTotales > 0 || motsClesDuTitreSolution.includes(motDeLaListe)) {
+                    motsTrouvesSet.add(motDeLaListe);
+                }
+            });
+
+            historiqueEssais.unshift({ mot: motSaisi, occurrences: occurrencesTotales });
+
+            document.getElementById('nbTentatives').innerText = historiqueEssais.length;
+            document.getElementById('motsTrouves').innerText = motsTrouvesSet.size;
+
+            rendreLeTexte();
+            mettreAJourHistorique();
+            verifierVictoire();
+        }
+
+        function donnerIndices() {
+            const indicesDisponibles = listeIndicesPossibles.map(normaliserMot).filter(mot => !motsTrouvesSet.has(mot));
+            if (indicesDisponibles.length === 0) {
+                alert("Plus d'indices disponibles !");
+                return;
+            }
+            const motIndice = indicesDisponibles[Math.floor(Math.random() * indicesDisponibles.length)];
+            motsTrouvesSet.add(motIndice);
+            historiqueEssais.unshift({ mot: `💡 Indice: ${motIndice}`, occurrences: "Bonus" });
+            rendreLeTexte();
+            mettreAJourHistorique();
+            verifierVictoire();
+        }
+
+        // LA CONDITION DE VICTOIRE : Est-ce que les mots du titre ont tous été découverts ?
+        function verifierVictoire() {
+            const aTrouveToutLeTitre = motsClesDuTitreSolution.every(motCle => motsTrouvesSet.has(motCle));
+
+            if (aTrouveToutLeTitre && !jeuGagne) {
+                jeuGagne = true;
+                document.getElementById('victoryMessage').style.display = 'block';
+                document.getElementById('wordInput').disabled = true;
+                document.getElementById('btnSubmit').disabled = true;
+                document.getElementById('btnHint').disabled = true;
+                rendreLeTexte(); // Révèle tout le reste par sécurité
+                lancerFeuxArtifices();
+            }
+        }
+
+        function lancerFeuxArtifices() {
+            let duree = 6 * 1000;
+            let fin = Date.now() + duree;
+
+            (function frame() {
+                confetti({ particleCount: 6, angle: 60, spread: 60, origin: { x: 0, y: 0.6 } });
+                confetti({ particleCount: 6, angle: 120, spread: 60, origin: { x: 1, y: 0.6 } });
+                if (Date.now() < fin) { requestAnimationFrame(frame); }
+            }());
+        }
+
+        function mettreAJourHistorique() {
+            const body = document.getElementById('historyBody');
+            body.innerHTML = '';
+            historiqueEssais.forEach((essai, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${historiqueEssais.length - index}</td>
+                                <td style="font-weight:bold;">${essai.mot}</td>
+                                <td style="color:${essai.occurrences > 0 || essai.occurrences === 'Bonus' ? '#27ae60':'#c0392b'}; font-weight:bold;">${essai.occurrences}</td>`;
+                body.appendChild(tr);
+            });
+        }
+
+        window.onload = initialiserJeu;
+    </script>
+</body>
+</html>
