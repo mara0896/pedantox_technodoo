@@ -1,4 +1,5 @@
-import BANQUE_NIVEAUX from "../../data/levels.json" with { type: "json" };
+const BANQUE_NIVEAUX = Array.isArray(window.BANQUE_NIVEAUX) ? window.BANQUE_NIVEAUX : [];
+const CLE_SAUVEGARDE_NIVEAU = 'pedantox_campagne_idx';
 
 let niveauActuelIdx = 0;
 
@@ -17,6 +18,38 @@ let motsDuTexte = [];
 let jeuGagne = false;
 
 let motsClesDuTitreSolution = [];
+
+
+
+function lireNiveauSauvegarde() {
+
+    try {
+
+        return localStorage.getItem(CLE_SAUVEGARDE_NIVEAU);
+
+    } catch (error) {
+
+        return null;
+
+    }
+
+}
+
+
+
+function sauvegarderNiveau(indexNiveau) {
+
+    try {
+
+        localStorage.setItem(CLE_SAUVEGARDE_NIVEAU, indexNiveau);
+
+    } catch (error) {
+
+        // Le jeu doit rester utilisable meme si le navigateur bloque localStorage.
+
+    }
+
+}
 
 
 
@@ -99,6 +132,14 @@ function decouperTexte(texte) {
 
 
 function chargerNiveau() {
+
+    if (BANQUE_NIVEAUX.length === 0) {
+
+        notifier("Les niveaux n'ont pas pu être chargés.");
+
+        return;
+
+    }
 
     if (niveauActuelIdx >= BANQUE_NIVEAUX.length) {
 
@@ -454,7 +495,7 @@ function passerAuNiveauSuivant() {
 
     }
 
-    localStorage.setItem('pedantox_campagne_idx', niveauActuelIdx);
+    sauvegarderNiveau(niveauActuelIdx);
 
     chargerNiveau();
 
@@ -463,6 +504,12 @@ function passerAuNiveauSuivant() {
 
 
 function lancerFeuxArtifices() {
+
+    if (typeof confetti !== 'function') {
+
+        return;
+
+    }
 
     let duree = 5 * 1000;
 
@@ -520,16 +567,30 @@ function mettreAJourHistorique() {
 
 
 
-window.onload = function() {
+function initialiserJeu() {
 
-    const sauvegardeIdx = localStorage.getItem('pedantox_campagne_idx');
+    document.getElementById('gameForm').addEventListener('submit', verifierMot);
+    document.getElementById('btnHint').addEventListener('click', donnerIndices);
+    document.getElementById('btnNextLevel').addEventListener('click', passerAuNiveauSuivant);
+
+    const sauvegardeIdx = lireNiveauSauvegarde();
 
     if (sauvegardeIdx !== null) {
 
-        niveauActuelIdx = parseInt(sauvegardeIdx, 10);
+        const indexSauvegarde = parseInt(sauvegardeIdx, 10);
+
+        if (!Number.isNaN(indexSauvegarde) && indexSauvegarde >= 0 && indexSauvegarde < BANQUE_NIVEAUX.length) {
+
+            niveauActuelIdx = indexSauvegarde;
+
+        }
 
     }
 
     chargerNiveau();
 
-};
+}
+
+
+
+document.addEventListener('DOMContentLoaded', initialiserJeu);

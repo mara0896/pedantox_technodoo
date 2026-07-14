@@ -80,7 +80,7 @@
 
                 <p id="victoryText" class="text-emerald-100 mb-4 font-medium">Vous avez trouvé le titre</p>
 
-                <button id="btnNextLevel" class="bg-white text-emerald-700 hover:bg-emerald-50 px-6 py-3 rounded-xl font-bold shadow-md transition transform hover:-translate-y-0.5 active:translate-y-0" onclick="passerAuNiveauSuivant()">
+                <button id="btnNextLevel" class="bg-white text-emerald-700 hover:bg-emerald-50 px-6 py-3 rounded-xl font-bold shadow-md transition transform hover:-translate-y-0.5 active:translate-y-0">
 
                     Passer au niveau suivant [=>]
 
@@ -94,7 +94,7 @@
 
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
 
-                <form id="gameForm" class="flex flex-col sm:flex-row gap-3" onsubmit="verifierMot(event)">
+                <form id="gameForm" class="flex flex-col sm:flex-row gap-3">
 
                     <input type="text" id="wordInput" placeholder="Proposez un mot (ex: Robin, code, bug...)" autocomplete="off" autofocus
 
@@ -108,7 +108,7 @@
 
                         </button>
 
-                        <button type="button" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-3 rounded-xl font-bold shadow-sm transition" onclick="donnerIndices()">
+                        <button type="button" id="btnHint" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-3 rounded-xl font-bold shadow-sm transition">
 
                             Indice
 
@@ -202,7 +202,8 @@
 
     </main>
 
-    <script type="module" src="src/views/index.js"></script>
+    <script src="./data/levels.js" defer></script>
+    <script src="./src/views/index.js" defer></script>
 
 </body>
 
