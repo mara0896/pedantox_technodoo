@@ -239,7 +239,7 @@ function genererHtmlMots(tableauMots, elementCible) {
 
                 span.classList.add('hidden-word');
 
-                span.title = `${item.texteOriginal.length} lettres`;
+                span.dataset.count = item.texteOriginal.length;
 
             }
 
