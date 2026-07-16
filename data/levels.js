@@ -1,8 +1,11 @@
 window.BANQUE_NIVEAUX = [
   {
     "titre": "Clairement là dessus",
+
     "texte": "Clairement là dessus est l'expression favorite et incontournable de notre formateur Robin Pêcheur. Elle est généralement balancée avec aplomb en tout début de phrase pour introduire un concept technique, ou assénée en fin d'explication pour marquer un accord total avec nos propositions. C'est le tic de langage officiel qui rythme nos journées de formation.",
+
     "indices": ["expression", "formateur", "Robin", "phrase", "concept", "accord"],
+
     "variantes": {
       "clairement": ["clairement"],
       "dessus": ["dessus", "la-dessus"],
@@ -12,6 +15,9 @@ window.BANQUE_NIVEAUX = [
       "concept": ["concept", "concepts", "idee", "idees"]
     }
   },
+
+
+
   {
     "titre": "JavaScript",
     "texte": "JavaScript est sans aucun doute le langage de l'horreur absolue, célèbre pour sa gestion catastrophique des dates et ses formats de données profondément horribles. Malgré leur implication quotidienne dans l'écosystème, Arnaud et Loïc vouent une haine viscérale et partagée à cette technologie. Malheureusement pour eux, ce langage est actuellement au cœur de notre apprentissage en formation.",
