@@ -19,6 +19,8 @@ let jeuGagne = false;
 
 let motsClesDuTitreSolution = [];
 
+let motsSimilairesTrouves = new Map();
+
 
 
 function lireNiveauSauvegarde() {
@@ -157,6 +159,8 @@ function chargerNiveau() {
 
     jeuGagne = false;
 
+    motsSimilairesTrouves = new Map();
+
 
 
     document.getElementById('levelIndicator').textContent = `Niveau ${niveauActuelIdx + 1} / ${BANQUE_NIVEAUX.length}`;
@@ -223,7 +227,7 @@ function genererHtmlMots(tableauMots, elementCible) {
 
             span.classList.add('word-block');
 
-
+            const motSimilaire = Array.from(motsSimilairesTrouves.entries()).find(([input, cible]) => cible === item.motNettoye);
 
             if (motsTrouvesSet.has(item.motNettoye) || jeuGagne) {
 
@@ -232,15 +236,23 @@ function genererHtmlMots(tableauMots, elementCible) {
                 span.classList.add('revealed-word');
 
             } else {
+                let motTapeParUtilisateur = null;
+                for (const [input, cible] of motsSimilairesTrouves.entries()) {
+                  if (cible === item.motNettoye) {
+                    motTapeParUtilisateur = input;
+                    break;
+                  }
+                }
 
-
-
-                span.textContent = '■'.repeat(item.texteOriginal.length);
-
-                span.classList.add('hidden-word');
-
-                span.dataset.count = item.texteOriginal.length;
-
+                if (motTapeParUtilisateur) {
+                  span.textContent = motTapeParUtilisateur; 
+                  span.classList.add("similar-word");
+                } else {
+                  span.textContent = "■".repeat(item.texteOriginal.length);
+                  span.style.color = "transparent";
+                  span.classList.add("hidden-word");
+                  span.dataset.count = item.texteOriginal.length;
+                }
             }
 
             elementCible.appendChild(span);
@@ -299,21 +311,13 @@ function verifierMot(event) {
 
     if (niveauDonnees.variantes) {
 
-        // Si l'utilisateur saisit une variante directe
+        for (let motCle in niveauDonnees.variantes) {
 
-        if (niveauDonnees.variantes[motNormalise]) {
+            const variantes = niveauDonnees.variantes[motCle].map(normaliserMot);
 
-            listeMotsAValider = listeMotsAValider.concat(niveauDonnees.variantes[motNormalise].map(normaliserMot));
+            if (variantes.includes(motNormalise)) {
 
-        }
-
-
-
-        for (let cle in niveauDonnees.variantes) {
-
-            if (cle === motNormalise) {
-
-                listeMotsAValider = listeMotsAValider.concat(niveauDonnees.variantes[cle].map(normaliserMot));
+                listeMotsAValider.push(motCle);
 
             }
 
@@ -321,7 +325,12 @@ function verifierMot(event) {
 
     }
 
-
+    const sim = niveauDonnees.similarities || {};
+    for (const [cible, synonymes] of Object.entries(sim)) {
+        if (synonymes.map(normaliserMot).includes(motNormalise)) {
+            motsSimilairesTrouves.set(motNormalise, cible);
+        }
+    }
 
     let occurrencesTotales = 0;
 
