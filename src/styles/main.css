@@ -124,6 +124,26 @@ body {
 
 }
 
+.word-block.similar-word {
+
+    background-color: #1d1f20;
+
+    color: #25c0eb;
+
+    font-weight: 600;
+
+    border : 1px solid #93c5fd;
+
+    max-width: 150px;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+}
+
 
 
 .title-zone .word-block.revealed-word {
