@@ -183,3 +183,39 @@ body {
     opacity: 1;
 
 }
+
+#suggestionsList {
+
+    list-style: none;
+
+    padding: 0;
+
+    margin: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 0.6rem;
+
+}
+
+#suggestionsList li {
+
+    border-left: 3px solid #38bdf8;
+
+    background: #ffffff;
+
+    padding: 0.7rem 0.8rem;
+
+    border-radius: 0.75rem;
+
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+
+}
+
+#suggestionInput {
+
+    min-height: 42px;
+
+}

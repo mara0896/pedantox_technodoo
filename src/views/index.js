@@ -1,5 +1,9 @@
 const BANQUE_NIVEAUX = Array.isArray(window.BANQUE_NIVEAUX) ? window.BANQUE_NIVEAUX : [];
 const CLE_SAUVEGARDE_NIVEAU = 'pedantox_campagne_idx';
+const REPO_OWNER = 'mara0896';
+const REPO_NAME = 'pedantox_technodoo';
+const SUGGESTIONS_ISSUES_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/issues?state=open&per_page=100`;
+const SUGGESTIONS_NEW_ISSUE_URL = `https://github.com/${REPO_OWNER}/${REPO_NAME}/issues/new`;
 
 let niveauActuelIdx = 0;
 
@@ -131,6 +135,88 @@ function decouperTexte(texte) {
 
 }
 
+
+
+async function lireSuggestionsSauvegardees() {
+
+    try {
+
+        const reponse = await fetch(SUGGESTIONS_ISSUES_URL, {
+
+            headers: {
+
+                'Accept': 'application/vnd.github+json',
+
+                'X-GitHub-Api-Version': '2022-11-28'
+
+            },
+
+            cache: 'no-store'
+
+        });
+
+        if (!reponse.ok) {
+
+            throw new Error('Impossible de charger les issues GitHub');
+
+        }
+
+        const issues = await reponse.json();
+
+        const suggestions = issues
+
+            .filter(issue => !issue.pull_request)
+
+            .filter(issue => issue.title && issue.title.toLowerCase().startsWith('suggestion'))
+
+            .map(issue => issue.title.replace(/^suggestion\s*[:\-]\s*/i, '').trim())
+
+            .filter(Boolean);
+
+        if (suggestions.length >= 0) {
+
+            localStorage.setItem('pedantox_suggestions_cache', JSON.stringify(suggestions));
+
+            return suggestions;
+
+        }
+
+    } catch (error) {
+
+        // Fallback local si l’API GitHub n’est pas accessible.
+
+    }
+
+    try {
+
+        const cache = localStorage.getItem('pedantox_suggestions_cache');
+
+        return cache ? JSON.parse(cache) : [];
+
+    } catch (error) {
+
+        return [];
+
+    }
+
+}
+
+
+async function ouvrirGitHubPourAjouterSuggestion() {
+
+    const input = document.getElementById('suggestionInput');
+
+    const texte = input.value.trim();
+
+    const titre = texte ? `Suggestion: ${texte}` : 'Suggestion: Nouvelle idée';
+
+    const url = `${SUGGESTIONS_NEW_ISSUE_URL}?title=${encodeURIComponent(titre)}&body=${encodeURIComponent('Idée ajoutée depuis Pédantox Technodoo.')}`;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+
+    notifier('La page GitHub s’ouvre pour enregistrer votre suggestion.', 'info');
+
+}
 
 
 function chargerNiveau() {
@@ -540,6 +626,50 @@ function lancerFeuxArtifices() {
 
 
 
+async function rendreSuggestionsDepuisSauvegarde() {
+
+    const container = document.getElementById('suggestionsList');
+
+    container.innerHTML = '';
+
+    const suggestions = await lireSuggestionsSauvegardees();
+
+    if (suggestions.length === 0) {
+
+        const item = document.createElement('li');
+
+        item.className = 'rounded-lg border border-dashed border-slate-200 bg-white px-3 py-2 text-slate-500';
+
+        item.textContent = 'Aucune idée enregistrée pour l’instant.';
+
+        container.appendChild(item);
+
+        return;
+
+    }
+
+    suggestions.forEach(suggestion => {
+
+        const item = document.createElement('li');
+
+        item.className = 'rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm';
+
+        item.textContent = suggestion;
+
+        container.appendChild(item);
+
+    });
+
+}
+
+
+async function ajouterSuggestionManuelle() {
+
+    await ouvrirGitHubPourAjouterSuggestion();
+
+}
+
+
 function mettreAJourHistorique() {
 
     const body = document.getElementById('historyBody');
@@ -581,6 +711,7 @@ function initialiserJeu() {
     document.getElementById('gameForm').addEventListener('submit', verifierMot);
     document.getElementById('btnHint').addEventListener('click', donnerIndices);
     document.getElementById('btnNextLevel').addEventListener('click', passerAuNiveauSuivant);
+    document.getElementById('btnAddSuggestion').addEventListener('click', ajouterSuggestionManuelle);
 
     const sauvegardeIdx = lireNiveauSauvegarde();
 

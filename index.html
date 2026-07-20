@@ -200,6 +200,40 @@
 
         </div>
 
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mt-2">
+
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+
+                <div>
+
+                    <h3 class="font-bold text-slate-800">Suggestions partagées</h3>
+
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+
+                    <input type="text" id="suggestionInput" placeholder="Écrivez une idée" class="px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-sky-500 transition text-sm w-full sm:w-56">
+
+                    <button type="button" id="btnAddSuggestion" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-xl font-bold shadow-sm transition shrink-0">
+
+                        Ajouter
+
+                    </button>
+
+                </div>
+
+            </div>
+
+<div class="w-full rounded-2xl border border-slate-200 bg-slate-50 p-3 min-h-[170px] max-h-[220px] overflow-y-auto">
+
+                    <ul id="suggestionsList" class="space-y-2 text-sm text-slate-700"></ul>
+
+                </div>
+
+            </div>
+
+        </div>
+
     </main>
 
     <script src="./data/levels.js" defer></script>
