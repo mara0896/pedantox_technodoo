@@ -1,2 +1,5 @@
 # jetbrain
 .idea/
+# Python
+.env
+.venv/
