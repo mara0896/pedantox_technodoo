@@ -165,7 +165,7 @@ function chargerNiveau() {
 
     document.getElementById('levelIndicator').textContent = `Niveau ${niveauActuelIdx + 1} / ${BANQUE_NIVEAUX.length}`;
 
-    const progressionPourcent = Math.round((niveauActuelIdx / BANQUE_NIVEAUX.length) * 100);
+    const progressionPourcent = Math.max(0, Math.min(100, Math.round((niveauActuelIdx / BANQUE_NIVEAUX.length) * 100)));
 
     document.getElementById('progressBarFill').style.width = `${progressionPourcent}%`;
 
@@ -464,13 +464,13 @@ function verifierVictoire() {
 
         if (isDernierNiveau) {
 
-            textVictoire.textContent = `🏆 FÉLICITATIONS ! Vous avez brillamment décodé tous les niveaux de la formation !`;
+            textVictoire.textContent = `FÉLICITATIONS!`;
 
             btnSuivant.textContent = "Recommencer au Début 🔄";
 
         } else {
 
-            textVictoire.textContent = `🎉 VICTOIRE ! La solution était bien : "${niveauDonnees.titre}"`;
+            textVictoire.textContent = `La solution était bien : "${niveauDonnees.titre}"`;
 
             btnSuivant.textContent = "Niveau Suivant ➡️";
 
@@ -484,9 +484,25 @@ function verifierVictoire() {
 
         document.getElementById('btnSubmit').disabled = true;
 
+        if (isDernierNiveau) {
+
+            document.getElementById('progressBarFill').style.width = '100%';
+
+            document.getElementById('percentIndicator').textContent = '100%';
+
+        } else {
+
+            const progressionPourcent = Math.max(0, Math.min(100, Math.round(((niveauActuelIdx + 1) / BANQUE_NIVEAUX.length) * 100)));
+
+            document.getElementById('progressBarFill').style.width = `${progressionPourcent}%`;
+
+            document.getElementById('percentIndicator').textContent = `${progressionPourcent}%`;
+
+        }
+
         rendreLeTexte();
 
-        lancerFeuxArtifices();
+        lancerFeuxArtifices(isDernierNiveau);
 
     }
 
@@ -512,7 +528,7 @@ function passerAuNiveauSuivant() {
 
 
 
-function lancerFeuxArtifices() {
+function lancerFeuxArtifices(estDernierNiveau = false) {
 
     if (typeof confetti !== 'function') {
 
@@ -520,17 +536,48 @@ function lancerFeuxArtifices() {
 
     }
 
-    let duree = 5 * 1000;
+    let duree = estDernierNiveau ? 7 * 1000 : 5 * 1000;
 
     let fin = Date.now() + duree;
 
+    const couleurs = estDernierNiveau ? ['#38bdf8', '#f59e0b', '#ec4899', '#8b5cf6', '#10b981', '#f43f5e'] : ['#38bdf8', '#f59e0b'];
 
 
     (function frame() {
 
-        confetti({ particleCount: 6, angle: 60, spread: 60, origin: { x: 0, y: 0.6 } });
+        const particleCount = estDernierNiveau ? 18 : 6;
 
-        confetti({ particleCount: 6, angle: 120, spread: 60, origin: { x: 1, y: 0.6 } });
+        confetti({
+
+            particleCount,
+
+            angle: 60,
+
+            spread: 80,
+
+            origin: { x: 0, y: 0.6 },
+
+            colors: couleurs,
+
+            scalar: estDernierNiveau ? 1.3 : 1
+
+        });
+
+        confetti({
+
+            particleCount,
+
+            angle: 120,
+
+            spread: 80,
+
+            origin: { x: 1, y: 0.6 },
+
+            colors: couleurs,
+
+            scalar: estDernierNiveau ? 1.3 : 1
+
+        });
 
         if (Date.now() < fin) { requestAnimationFrame(frame); }
 

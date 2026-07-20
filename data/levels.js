@@ -266,7 +266,8 @@ window.BANQUE_NIVEAUX = [
       "avons" : ["avoir"],
       "découvert" : ["découvrir"],
       "l" : ["le"],
-      "permettait" : ["permettre"]
+      "permettait" : ["permettre"],
+      "bites" : ["bite"]
     },
 
     similarities :
