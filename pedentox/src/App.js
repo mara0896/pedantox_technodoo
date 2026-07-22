@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchLevels } from './services/levelsApi';
 import { decouperTexte, normaliserMot } from './utils/textUtils';
 
@@ -21,9 +21,12 @@ function sauvegarderNiveau(indexNiveau) {
 }
 
 function App() {
+  const delaisCompteursRef = useRef(new Map());
   const [levels, setLevels] = useState([]);
   const [niveauActuelIdx, setNiveauActuelIdx] = useState(0);
   const [motsTrouves, setMotsTrouves] = useState(new Set());
+  const [motsSimilairesTrouves, setMotsSimilairesTrouves] = useState(new Map());
+  const [compteursVisibles, setCompteursVisibles] = useState(new Set());
   const [historiqueEssais, setHistoriqueEssais] = useState([]);
   const [jeuGagne, setJeuGagne] = useState(false);
   const [saisieMot, setSaisieMot] = useState('');
@@ -75,27 +78,47 @@ function App() {
 
   useEffect(() => {
     setMotsTrouves(new Set());
+    setMotsSimilairesTrouves(new Map());
+    setCompteursVisibles(new Set());
+    delaisCompteursRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
+    delaisCompteursRef.current.clear();
     setHistoriqueEssais([]);
     setJeuGagne(false);
     setSaisieMot('');
   }, [niveauActuelIdx, levels]);
 
   useEffect(() => {
+    const delaisCompteurs = delaisCompteursRef.current;
+    return () => {
+      delaisCompteurs.forEach((timeoutId) => clearTimeout(timeoutId));
+      delaisCompteurs.clear();
+    };
+  }, []);
+
+  useEffect(() => {
     const aTrouveToutLeTitre = motsClesDuTitreSolution.every((motCle) => motsTrouves.has(motCle));
     if (aTrouveToutLeTitre && !jeuGagne && niveauDonnees) {
       setJeuGagne(true);
       if (typeof window.confetti === 'function') {
+        const isDernierNiveau = niveauActuelIdx === levels.length - 1;
+        const couleursNiveau = ['#0ea5e9', '#f97316'];
         const fin = Date.now() + 5 * 1000;
         (function frame() {
-          window.confetti({ particleCount: 6, angle: 60, spread: 60, origin: { x: 0, y: 0.6 } });
-          window.confetti({ particleCount: 6, angle: 120, spread: 60, origin: { x: 1, y: 0.6 } });
+          const options = {
+            particleCount: 6,
+            spread: 60,
+            colors: isDernierNiveau ? undefined : couleursNiveau,
+          };
+
+          window.confetti({ ...options, angle: 60, origin: { x: 0, y: 0.6 } });
+          window.confetti({ ...options, angle: 120, origin: { x: 1, y: 0.6 } });
           if (Date.now() < fin) {
             requestAnimationFrame(frame);
           }
         })();
       }
     }
-  }, [jeuGagne, motsClesDuTitreSolution, motsTrouves, niveauDonnees]);
+  }, [jeuGagne, motsClesDuTitreSolution, motsTrouves, niveauDonnees, niveauActuelIdx, levels.length]);
 
   function notifier(message, type = 'error') {
     setToast({ message, type });
@@ -120,18 +143,35 @@ function App() {
       return;
     }
 
-    let listeMotsAValider = [motNormalise];
+    const listeMotsAValider = new Set([motNormalise]);
     if (niveauDonnees.variantes) {
       if (niveauDonnees.variantes[motNormalise]) {
-        listeMotsAValider = listeMotsAValider.concat(niveauDonnees.variantes[motNormalise].map(normaliserMot));
+        niveauDonnees.variantes[motNormalise].map(normaliserMot).forEach((mot) => listeMotsAValider.add(mot));
       }
 
       // Comportement conservé pour compatibilité stricte
       for (const cle in niveauDonnees.variantes) {
         if (cle === motNormalise) {
-          listeMotsAValider = listeMotsAValider.concat(niveauDonnees.variantes[cle].map(normaliserMot));
+          niveauDonnees.variantes[cle].map(normaliserMot).forEach((mot) => listeMotsAValider.add(mot));
         }
       }
+    }
+
+    const similarities = niveauDonnees.similarities || {};
+    let cibleSimilaire = null;
+    for (const [cible, synonymes] of Object.entries(similarities)) {
+      if (synonymes.map(normaliserMot).includes(motNormalise)) {
+        cibleSimilaire = normaliserMot(cible);
+        break;
+      }
+    }
+
+    if (cibleSimilaire) {
+      setMotsSimilairesTrouves((prev) => {
+        const next = new Map(prev);
+        next.set(motNormalise, cibleSimilaire);
+        return next;
+      });
     }
 
     let occurrencesTotales = 0;
@@ -206,13 +246,53 @@ function App() {
       }
 
       const revealed = motsTrouves.has(item.motNettoye) || jeuGagne;
+      let motTapeParUtilisateur = null;
+      for (const [input, cible] of motsSimilairesTrouves.entries()) {
+        if (cible === item.motNettoye) {
+          motTapeParUtilisateur = input;
+          break;
+        }
+      }
+
+      const isSimilar = !revealed && Boolean(motTapeParUtilisateur);
+      const hiddenClass = isSimilar ? 'similar-word' : 'hidden-word';
+      const tokenLength = item.texteOriginal.length;
+      const tokenId = `${prefix}-${index}`;
+      const compteurVisible = compteursVisibles.has(tokenId);
+
       return (
         <span
           key={`${prefix}-${index}`}
-          className={`word-block ${revealed ? 'revealed-word' : 'hidden-word'}`}
-          data-count={item.texteOriginal.length}
+          className={`word-block ${revealed ? 'revealed-word' : hiddenClass} ${compteurVisible ? 'count-visible' : ''}`}
+          data-count={tokenLength}
+          style={{ minWidth: `${tokenLength}ch` }}
+          onClick={() => {
+            if (!revealed && !isSimilar) {
+              setCompteursVisibles((prev) => {
+                const next = new Set(prev);
+                next.add(tokenId);
+                return next;
+              });
+
+              const delaiExistant = delaisCompteursRef.current.get(tokenId);
+              if (delaiExistant) {
+                clearTimeout(delaiExistant);
+              }
+
+              const timeoutId = setTimeout(() => {
+                setCompteursVisibles((prev) => {
+                  const next = new Set(prev);
+                  next.delete(tokenId);
+                  return next;
+                });
+                delaisCompteursRef.current.delete(tokenId);
+              }, 2500);
+
+              delaisCompteursRef.current.set(tokenId, timeoutId);
+            }
+          }}
         >
-          {revealed ? item.texteOriginal : '■'.repeat(item.texteOriginal.length)}
+          {revealed ? item.texteOriginal : isSimilar ? motTapeParUtilisateur : '■'.repeat(tokenLength)}
         </span>
       );
     });
