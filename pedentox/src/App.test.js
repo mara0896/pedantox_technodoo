@@ -1,8 +1,19 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+jest.mock('./services/levelsApi', () => ({
+  fetchLevels: jest.fn().mockResolvedValue([
+    {
+      titre: 'Test Niveau',
+      texte: 'Texte exemple pour le test.',
+      indices: ['test'],
+      variantes: { test: ['test'] },
+    },
+  ]),
+}));
+
+test('renders game title', async () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  const title = await screen.findByText(/Pédantox/i);
+  expect(title).toBeInTheDocument();
 });
